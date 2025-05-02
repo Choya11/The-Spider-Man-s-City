@@ -5,7 +5,7 @@ import random
 import math
 
 GRID_SIZE = 600
-BLOCK_SIZE = 200
+BLOCK_SIZE = 210
 WIN_W, WIN_H = 1000, 800
 camera_angle = 0
 camera_radius = 900
