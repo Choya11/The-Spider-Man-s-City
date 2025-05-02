@@ -7,6 +7,12 @@ import math
 GRID_SIZE = 600
 BLOCK_SIZE = 210
 WIN_W, WIN_H = 1000, 800
+
+# Camera state
+use_first_person = False
+fp_pos = [0.0, 0.0, 15.0]  # x, y, z
+fp_angle = 0.0             # Horizontal rotation
+
 camera_angle = 0
 camera_radius = 900
 camera_height = 700
@@ -21,7 +27,6 @@ for i in range(6):
         building_heights[i][j] = base_height + random.uniform(-20, 20)
 
 helicopter_angle = 0
-
 max_height = 0
 heli_pos = (0, 0, 0)
 for i in range(6):
@@ -188,14 +193,12 @@ def draw_helicopter():
 
     glPushMatrix()
     glTranslatef(x, y, z + 20)
-
     glColor3f(0.1, 0.1, 0.6)
     glPushMatrix()
     glScalef(30, 15, 10)
     glutSolidCube(1)
     glPopMatrix()
 
-    glColor3f(0.1, 0.1, 0.6)
     glPushMatrix()
     glTranslatef(-20, 0, 0)
     glScalef(20, 5, 5)
@@ -223,15 +226,12 @@ def update_helicopter():
 def draw_plane(plane):
     glPushMatrix()
     glTranslatef(plane['x'], plane['y'], plane['z'])
-
     glColor3f(0.9, 0.9, 0.9)
 
-    # Main body of the plane
     glPushMatrix()
     glScalef(10, 3, 3)
     glutSolidCube(1)
     glPopMatrix()
-
 
     glPushMatrix()
     glTranslatef(0, 5, 0)
@@ -251,25 +251,21 @@ def draw_plane(plane):
     glutSolidCube(1)
     glPopMatrix()
 
-
     glPushMatrix()
     glTranslatef(5, 0, 0)
     glColor3f(0.6, 0.6, 0.6)
     glutSolidSphere(0.5, 10, 10)
     glPopMatrix()
-
     glPopMatrix()
 
 def update_planes():
     for plane in planes:
         plane['x'] += plane['dx']
         plane['y'] += plane['dy']
-
         if plane['x'] > GRID_SIZE:
             plane['x'] = -GRID_SIZE
         elif plane['x'] < -GRID_SIZE:
             plane['x'] = GRID_SIZE
-
         if plane['y'] > GRID_SIZE:
             plane['y'] = -GRID_SIZE
         elif plane['y'] < -GRID_SIZE:
@@ -281,11 +277,19 @@ def setupCamera():
     gluPerspective(75, WIN_W / WIN_H, 1, 3000)
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
-    rad = math.radians(camera_angle)
-    eye_x = camera_radius * math.sin(rad)
-    eye_y = camera_radius * math.cos(rad)
-    eye_z = camera_height
-    gluLookAt(eye_x, eye_y, eye_z, 0, 0, 0, 0, 0, 1)
+
+    if use_first_person:
+        rad = math.radians(fp_angle)
+        look_x = fp_pos[0] + math.sin(rad) * 50
+        look_y = fp_pos[1] + math.cos(rad) * 50
+        look_z = fp_pos[2]
+        gluLookAt(fp_pos[0], fp_pos[1], fp_pos[2], look_x, look_y, look_z, 0, 0, 1)
+    else:
+        rad = math.radians(camera_angle)
+        eye_x = camera_radius * math.sin(rad)
+        eye_y = camera_radius * math.cos(rad)
+        eye_z = camera_height
+        gluLookAt(eye_x, eye_y, eye_z, 0, 0, 0, 0, 0, 1)
 
 def showScreen():
     glClearColor(0, 0.05, 0.25, 1)
@@ -295,55 +299,64 @@ def showScreen():
     draw_buildings()
     draw_lamps_and_signs()
     draw_park()
-
     for i, car_x in enumerate(car_positions):
         y_pos = (i - 3) * BLOCK_SIZE
         draw_car(car_x, y_pos)
-
     draw_helicopter()
-
     for plane in planes:
         draw_plane(plane)
-
     update_car_positions()
     update_helicopter()
     update_planes()
     glutSwapBuffers()
 
 def keyboardListener(key, x, y):
-    global camera_angle, camera_height
-    angle_step = 5
-    height_step = 20
+    global camera_angle, camera_height, use_first_person, fp_pos, fp_angle
 
-    if key == b'a':
-        camera_angle = (camera_angle - angle_step) % 360
-    elif key == b'd':
-        camera_angle = (camera_angle + angle_step) % 360
-    elif key == b'w':
-        camera_height = min(camera_height + height_step, 1500)
-    elif key == b's':
-        camera_height = max(camera_height - height_step, 100)
+    if key == b'f':
+        use_first_person = not use_first_person
+
+    elif use_first_person:
+        speed = 20
+        rad = math.radians(fp_angle)
+        if key == b'w':
+            fp_pos[0] += math.sin(rad) * speed
+            fp_pos[1] += math.cos(rad) * speed
+        elif key == b's':
+            fp_pos[0] -= math.sin(rad) * speed
+            fp_pos[1] -= math.cos(rad) * speed
+        elif key == b'a':
+            fp_angle = (fp_angle - 5) % 360
+        elif key == b'd':
+            fp_angle = (fp_angle + 5) % 360
+        elif key == b'q':
+            fp_pos[2] += 10
+        elif key == b'e':
+            fp_pos[2] = max(1, fp_pos[2] - 10)
+
+    else:
+        if key == b'a':
+            camera_angle = (camera_angle - 5) % 360
+        elif key == b'd':
+            camera_angle = (camera_angle + 5) % 360
+        elif key == b'w':
+            camera_height = min(camera_height + 20, 1500)
+        elif key == b's':
+            camera_height = max(camera_height - 20, 100)
 
     glutPostRedisplay()
 
 def specialKeyListener(key, x, y):
     global camera_radius, camera_angle
-    radius_step = 50
-    angle_step = 5
-
     if key == GLUT_KEY_LEFT:
-        camera_angle = (camera_angle - angle_step) % 360
+        camera_angle = (camera_angle - 5) % 360
     elif key == GLUT_KEY_RIGHT:
-        camera_angle = (camera_angle + angle_step) % 360
+        camera_angle = (camera_angle + 5) % 360
     elif key == GLUT_KEY_UP:
-        camera_radius = max(camera_radius - radius_step, 200)
+        camera_radius = max(camera_radius - 50, 200)
     elif key == GLUT_KEY_DOWN:
-        camera_radius = min(camera_radius + radius_step, 1500)
-
+        camera_radius = min(camera_radius + 50, 1500)
     glutPostRedisplay()
-
-def mouse_click(button, state, x, y):
-    pass
 
 def main():
     glutInit()
@@ -355,8 +368,6 @@ def main():
     glutIdleFunc(showScreen)
     glutKeyboardFunc(keyboardListener)
     glutSpecialFunc(specialKeyListener)
-    glutMouseFunc(mouse_click)
     glutMainLoop()
 
-if __name__ == "__main__":
-    main()
+main()
