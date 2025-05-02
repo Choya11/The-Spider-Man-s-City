@@ -31,6 +31,17 @@ for i in range(6):
             max_height = h
             heli_pos = ((i - 2.5) * BLOCK_SIZE, (j - 2.5) * BLOCK_SIZE, h)
 
+planes = []
+for _ in range(3):
+    plane = {
+        'x': random.uniform(-GRID_SIZE, GRID_SIZE),
+        'y': random.uniform(-GRID_SIZE, GRID_SIZE),
+        'z': random.uniform(300, 600),
+        'dx': random.uniform(-1, 1) * 2,
+        'dy': random.uniform(-1, 1) * 2
+    }
+    planes.append(plane)
+
 def draw_streets_and_sidewalks():
     glColor3f(0.05, 0.05, 0.05)
     for i in range(-3, 4):
@@ -209,6 +220,61 @@ def update_helicopter():
     global helicopter_angle
     helicopter_angle = (helicopter_angle + 10) % 360
 
+def draw_plane(plane):
+    glPushMatrix()
+    glTranslatef(plane['x'], plane['y'], plane['z'])
+
+    glColor3f(0.9, 0.9, 0.9)
+
+    # Main body of the plane
+    glPushMatrix()
+    glScalef(10, 3, 3)
+    glutSolidCube(1)
+    glPopMatrix()
+
+
+    glPushMatrix()
+    glTranslatef(0, 5, 0)
+    glScalef(15, 1, 3)
+    glutSolidCube(1)
+    glPopMatrix()
+
+    glPushMatrix()
+    glTranslatef(0, -5, 0)
+    glScalef(15, 1, 3)
+    glutSolidCube(1)
+    glPopMatrix()
+
+    glPushMatrix()
+    glTranslatef(5, 0, 0)
+    glScalef(2, 1, 2)
+    glutSolidCube(1)
+    glPopMatrix()
+
+
+    glPushMatrix()
+    glTranslatef(5, 0, 0)
+    glColor3f(0.6, 0.6, 0.6)
+    glutSolidSphere(0.5, 10, 10)
+    glPopMatrix()
+
+    glPopMatrix()
+
+def update_planes():
+    for plane in planes:
+        plane['x'] += plane['dx']
+        plane['y'] += plane['dy']
+
+        if plane['x'] > GRID_SIZE:
+            plane['x'] = -GRID_SIZE
+        elif plane['x'] < -GRID_SIZE:
+            plane['x'] = GRID_SIZE
+
+        if plane['y'] > GRID_SIZE:
+            plane['y'] = -GRID_SIZE
+        elif plane['y'] < -GRID_SIZE:
+            plane['y'] = GRID_SIZE
+
 def setupCamera():
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
@@ -236,8 +302,12 @@ def showScreen():
 
     draw_helicopter()
 
+    for plane in planes:
+        draw_plane(plane)
+
     update_car_positions()
     update_helicopter()
+    update_planes()
     glutSwapBuffers()
 
 def keyboardListener(key, x, y):
